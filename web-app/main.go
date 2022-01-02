@@ -27,7 +27,7 @@ func load(title string) (*Page, error) {
 	return &Page{Title: title, Body: body}, nil
 }
 
-// Render page
+// ROUT HANDLERS
 func view(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[len("/test/"):]
 	p, _ := load(title)
@@ -36,9 +36,19 @@ func view(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
+func edit(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[len("/edit/"):]
+	p, _ := load(title)
+	t, _ := template.ParseFiles("edit.html")
+	t.Execute(w, p)
+}
+
+
+
 func main() {
 	p := &Page{Title: "Test", Body: []byte("Welcome to the Test page")}
 	p.save()
 	http.HandleFunc("/test/", view)
+	http.HandleFunc("/edit/", edit)
 	http.ListenAndServe(":8000", nil)
 }
