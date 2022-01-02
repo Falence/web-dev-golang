@@ -11,12 +11,14 @@ type Page struct {
 	Body []byte
 }
 
-// save method
+// METHODS
 func (p *Page) save() error {
 	f := p.Title + ".txt"
 	return ioutil.WriteFile(f, p.Body, 0600) // 0600: for permissions
 }
 
+
+// OTHER FUNCTIONS
 // load page content from file
 func load(title string) (*Page, error) {
 	f := title + ".txt"
@@ -26,6 +28,7 @@ func load(title string) (*Page, error) {
 	}
 	return &Page{Title: title, Body: body}, nil
 }
+
 
 // ROUT HANDLERS
 func view(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +46,13 @@ func edit(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
+func save(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[len("/save/"):]
+	body := r.FormValue("body")
+	p := &Page{Title: title, Body: []byte(body)}
+	p.save()
+	http.Redirect(w, r, "/test/" + title, http.StatusFound)
+}
 
 
 func main() {
@@ -50,5 +60,6 @@ func main() {
 	p.save()
 	http.HandleFunc("/test/", view)
 	http.HandleFunc("/edit/", edit)
+	http.HandleFunc("/save/", save)
 	http.ListenAndServe(":8000", nil)
 }
