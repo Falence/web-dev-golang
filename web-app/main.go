@@ -1,22 +1,24 @@
 package main
 
 import (
-	"net/http"
 	"html/template"
 	"io/ioutil"
+	"net/http"
 )
 
 type Page struct {
 	Title string
-	Body []byte
+	Body  []byte
 }
+
+var tmplView = template.Must(template.New("test").ParseFiles("base.html", "test.html", "index.html"))
+var tmplEdit = template.Must(template.New("edit").ParseFiles("base.html", "edit.html", "index.html"))
 
 // METHODS
 func (p *Page) save() error {
 	f := p.Title + ".txt"
 	return ioutil.WriteFile(f, p.Body, 0600) // 0600: for permissions
 }
-
 
 // OTHER FUNCTIONS
 // load page content from file
@@ -29,21 +31,24 @@ func load(title string) (*Page, error) {
 	return &Page{Title: title, Body: body}, nil
 }
 
-
-// ROUT HANDLERS
+// ROUTE HANDLERS
 func view(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[len("/test/"):]
 	p, _ := load(title)
+
+	tmplView.ExecuteTemplate(w, "base", p)
 	// fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
-	t, _ := template.ParseFiles("test.html")
-	t.Execute(w, p)
+	// t, _ := template.ParseFiles("test.html")
+	// t.Execute(w, p)
 }
 
 func edit(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[len("/edit/"):]
 	p, _ := load(title)
-	t, _ := template.ParseFiles("edit.html")
-	t.Execute(w, p)
+
+	tmplEdit.ExecuteTemplate(w, "base", p)
+	// t, _ := template.ParseFiles("edit.html")
+	// t.Execute(w, p)
 }
 
 func save(w http.ResponseWriter, r *http.Request) {
@@ -51,13 +56,11 @@ func save(w http.ResponseWriter, r *http.Request) {
 	body := r.FormValue("body")
 	p := &Page{Title: title, Body: []byte(body)}
 	p.save()
-	http.Redirect(w, r, "/test/" + title, http.StatusFound)
+	http.Redirect(w, r, "/test/"+title, http.StatusFound)
 }
 
-
 func main() {
-	p := &Page{Title: "Test", Body: []byte("Welcome to the Test page")}
-	p.save()
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/test/", view)
 	http.HandleFunc("/edit/", edit)
 	http.HandleFunc("/save/", save)
